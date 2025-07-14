@@ -5,13 +5,15 @@ import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 
 export default function CameraPage() {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const canvasRef = useRef(null); // still needed for capturing image, just not rendered
   const streamRef = useRef(null);
   const { boxName } = useParams();
   const router = useRouter();
 
   const [lastImage, setLastImage] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [shutterFlash, setShutterFlash] = useState(false);
 
   const startCamera = async () => {
     try {
@@ -21,28 +23,42 @@ export default function CameraPage() {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-        };
+        videoRef.current.play();
       }
+      setIsCameraOn(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
     }
   };
 
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraOn(false);
+  };
+
+  const toggleCamera = () => {
+    isCameraOn ? stopCamera() : startCamera();
+  };
+
   const captureImage = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current) return;
 
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
+    const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const dataUrl = canvas.toDataURL("image/jpeg");
-    setLastImage(dataUrl); // store in state
+    setLastImage(dataUrl);
+
+    // Flash effect
+    setShutterFlash(true);
+    setTimeout(() => setShutterFlash(false), 150);
 
     // Save to localStorage
     const storedBoxes = localStorage.getItem("boxes");
@@ -69,87 +85,106 @@ export default function CameraPage() {
       localStorage.setItem("boxes", JSON.stringify(boxes));
     }
     setLastImage(null);
-    const context = canvasRef.current.getContext("2d");
-    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
   useEffect(() => {
     startCamera();
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-    };
+    return () => stopCamera();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center relative">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          Seed Packet Camera - {decodeURIComponent(boxName)}
-        </h1>
-
+    <div className="min-h-screen bg-black flex items-center justify-center relative">
+      <div className="fixed inset-0 z-0">
         <video
           ref={videoRef}
-          className="w-full rounded-md mb-4 pointer-events-none select-none"
+          className="w-full h-full object-cover rounded-lg pointer-events-none select-none"
           autoPlay
           playsInline
           muted
-          disablePictureInPicture
-          controls={false}
         />
 
-        <div className="relative mb-4">
-          <canvas
-            ref={canvasRef}
-            className="w-full border border-gray-300 rounded-md"
-          />
-          {lastImage && (
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-500/20"
-              aria-label="Delete image"
-              type="button"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-6 h-6 text-red-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
+        {/* Flash effect */}
+        {shutterFlash && (
+          <div className="absolute inset-0 bg-white opacity-80 animate-fade-out pointer-events-none z-10" />
+        )}
 
-        <div className="space-y-2">
-          <button
-            onClick={startCamera}
-            className="w-full bg-green-500 text-white p-2 rounded-md hover:bg-green-600"
+        {/* Delete last image button */}
+        <button
+          onClick={() => router.push(`/box/${encodeURIComponent(boxName)}`)}
+          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center bg-white/80 hover:bg-white z-20"
+          aria-label="Go home"
+          type="button"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6 text-black"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={3}
           >
-            Start Camera
-          </button>
-          <button
-            onClick={captureImage}
-            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-          >
-            Take Picture
-          </button>
-          <button
-            onClick={() => router.push(`/box/${encodeURIComponent(boxName)}`)}
-            className="w-full bg-gray-500 text-white p-2 rounded-md hover:bg-gray-600"
-          >
-            Back to box
-          </button>
-        </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        {/* Toggle camera button */}
+        <button
+          onClick={toggleCamera}
+          className="absolute top-2 left-2 w-10 h-10 rounded-full bg-white/80 hover:bg-white flex items-center justify-center z-20"
+        >
+          {!isCameraOn ? (
+            // Camera Off Icon
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-black"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h16M4 18h16M4 6v12"
+              />
+              {/* Slash from top-right to bottom-left, extended */}
+              <line
+                x1="20"
+                y1="4"
+                x2="4"
+                y2="20"
+                stroke="red"
+                strokeWidth="2.5"
+              />
+            </svg>
+          ) : (
+            // Camera On Icon
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-black"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h16M4 18h16M4 6v12"
+              />
+            </svg>
+          )}
+        </button>
+
+        {/* Capture button */}
+        <button
+          onClick={captureImage}
+          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white hover:bg-gray-300 border-4 border-gray-800 z-20"
+        ></button>
       </div>
 
       <ConfirmDeleteModal
