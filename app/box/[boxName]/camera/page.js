@@ -13,6 +13,12 @@ export default function SwipeView() {
   const isDragging = useRef(false);
 
   const clampIndex = (index) => Math.min(Math.max(index, 0), 1);
+  useEffect(() => {
+    const width = window.innerWidth;
+    currentTranslate.current = -currentIndex * width;
+    prevTranslate.current = currentTranslate.current;
+    setSliderPosition(currentTranslate.current);
+  }, [currentIndex]);
 
   const setSliderPosition = (translateX) => {
     if (containerRef.current) {
@@ -37,7 +43,20 @@ export default function SwipeView() {
     if (!isDragging.current) return;
     const currentPosition = getPositionX(event);
     const diff = currentPosition - startX.current;
-    currentTranslate.current = prevTranslate.current + diff;
+
+    // Calculate proposed new translate
+    let newTranslate = prevTranslate.current + diff;
+
+    // Clamp limits: left boundary is 0 (no swiping right beyond first page)
+    // right boundary is -width * (numberOfPages - 1)
+    const width = window.innerWidth; // full viewport width
+    const maxTranslate = 0; // leftmost position
+    const minTranslate = -width * 1; // rightmost position (index 1)
+
+    if (newTranslate > maxTranslate) newTranslate = maxTranslate;
+    if (newTranslate < minTranslate) newTranslate = minTranslate;
+
+    currentTranslate.current = newTranslate;
   };
 
   const touchEnd = () => {
@@ -62,30 +81,18 @@ export default function SwipeView() {
       : event.touches[0].clientX;
   };
 
-  useEffect(() => {
-    const width = window.innerWidth; // full viewport width
-    currentTranslate.current = -currentIndex * width;
-    prevTranslate.current = currentTranslate.current;
-    setSliderPosition(currentTranslate.current);
-  }, [currentIndex]);
-
   return (
     <div
-      style={{
-        overflow: "hidden",
-        width: "100vw",
-        height: "100vh",
-        touchAction: "pan-y",
-        userSelect: "none",
-      }}
+      className="overflow-hidden w-screen h-[calc(100vh-env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)]"
+      style={{ touchAction: "pan-x", userSelect: "none" }}
     >
       <div
         ref={containerRef}
+        className="flex h-full transition-transform ease-out"
         style={{
-          display: "flex",
-          width: "200vw", // twice viewport width for 2 pages at 100vw each
-          height: "100vh",
-          transition: isDragging.current ? "none" : "transform 0.3s ease-out",
+          width: "200vw",
+          transition: isDragging.current ? "none" : undefined,
+          transform: `translateX(${currentTranslate.current}px)`,
         }}
         onTouchStart={touchStart(currentIndex)}
         onTouchMove={touchMove}
@@ -97,21 +104,15 @@ export default function SwipeView() {
           if (isDragging.current) touchEnd();
         }}
       >
-        {/* Page 1: CameraPage takes full viewport width */}
-        <div style={{ width: "100vw", height: "100vh" }}>
+        {/* Page 1 */}
+        <div className="w-screen h-full">
           <CameraPage />
         </div>
 
-        {/* Page 2: Fullscreen image takes full viewport width */}
+        {/* Page 2 */}
         <div
-          style={{
-            width: "100vw",
-            height: "100vh",
-            backgroundImage: "url('/test.jpg')",
-            backgroundSize: "contain",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
+          className="w-screen h-full bg-no-repeat bg-contain bg-center"
+          style={{ backgroundImage: "url('/test.jpg')" }}
         />
       </div>
     </div>
