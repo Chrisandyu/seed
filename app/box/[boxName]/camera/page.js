@@ -1,204 +1,119 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
+import { useState, useRef, useEffect } from "react";
+import CameraPage from "./CameraPage";
 
-export default function CameraPage() {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null); // still needed for capturing image, just not rendered
-  const streamRef = useRef(null);
-  const { boxName } = useParams();
-  const router = useRouter();
+export default function SwipeView() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef(null);
 
-  const [lastImage, setLastImage] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(false);
-  const [shutterFlash, setShutterFlash] = useState(false);
+  const startX = useRef(0);
+  const currentTranslate = useRef(0);
+  const prevTranslate = useRef(0);
+  const animationRef = useRef(null);
+  const isDragging = useRef(false);
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setIsCameraOn(true);
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+  const clampIndex = (index) => Math.min(Math.max(index, 0), 1);
+
+  const setSliderPosition = (translateX) => {
+    if (containerRef.current) {
+      containerRef.current.style.transform = `translateX(${translateX}px)`;
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setIsCameraOn(false);
-  };
-
-  const toggleCamera = () => {
-    isCameraOn ? stopCamera() : startCamera();
-  };
-
-  const captureImage = () => {
-    if (!videoRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const dataUrl = canvas.toDataURL("image/jpeg");
-    setLastImage(dataUrl);
-
-    // Flash effect
-    setShutterFlash(true);
-    setTimeout(() => setShutterFlash(false), 150);
-
-    // Save to localStorage
-    const storedBoxes = localStorage.getItem("boxes");
-    let boxes = storedBoxes ? JSON.parse(storedBoxes) : [];
-    const index = boxes.findIndex(
-      (box) => box.name === decodeURIComponent(boxName),
-    );
-    if (index !== -1) {
-      boxes[index].images = [...(boxes[index].images || []), dataUrl];
-      localStorage.setItem("boxes", JSON.stringify(boxes));
+  const animation = () => {
+    setSliderPosition(currentTranslate.current);
+    if (isDragging.current) {
+      animationRef.current = requestAnimationFrame(animation);
     }
   };
 
-  const deleteLastImage = () => {
-    const storedBoxes = localStorage.getItem("boxes");
-    let boxes = storedBoxes ? JSON.parse(storedBoxes) : [];
-    const index = boxes.findIndex(
-      (box) => box.name === decodeURIComponent(boxName),
-    );
-    if (index !== -1 && lastImage) {
-      boxes[index].images = boxes[index].images.filter(
-        (img) => img !== lastImage,
-      );
-      localStorage.setItem("boxes", JSON.stringify(boxes));
+  const touchStart = (index) => (event) => {
+    isDragging.current = true;
+    startX.current = getPositionX(event);
+    animationRef.current = requestAnimationFrame(animation);
+  };
+
+  const touchMove = (event) => {
+    if (!isDragging.current) return;
+    const currentPosition = getPositionX(event);
+    const diff = currentPosition - startX.current;
+    currentTranslate.current = prevTranslate.current + diff;
+  };
+
+  const touchEnd = () => {
+    isDragging.current = false;
+    cancelAnimationFrame(animationRef.current);
+
+    const movedBy = currentTranslate.current - prevTranslate.current;
+    const width = window.innerWidth; // full viewport width for swipe distance
+
+    if (movedBy < -100 && currentIndex < 1) {
+      setCurrentIndex((i) => clampIndex(i + 1));
+    } else if (movedBy > 100 && currentIndex > 0) {
+      setCurrentIndex((i) => clampIndex(i - 1));
+    } else {
+      setSliderPosition(prevTranslate.current);
     }
-    setLastImage(null);
+  };
+
+  const getPositionX = (event) => {
+    return event.type.includes("mouse")
+      ? event.pageX
+      : event.touches[0].clientX;
   };
 
   useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-  }, []);
+    const width = window.innerWidth; // full viewport width
+    currentTranslate.current = -currentIndex * width;
+    prevTranslate.current = currentTranslate.current;
+    setSliderPosition(currentTranslate.current);
+  }, [currentIndex]);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative">
-      <div className="fixed inset-0 z-0">
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover rounded-lg pointer-events-none select-none"
-          autoPlay
-          playsInline
-          muted
-        />
-
-        {/* Flash effect */}
-        {shutterFlash && (
-          <div className="absolute inset-0 bg-white opacity-80 animate-fade-out pointer-events-none z-10" />
-        )}
-
-        {/* Delete last image button */}
-        <button
-          onClick={() => router.push(`/box/${encodeURIComponent(boxName)}`)}
-          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center bg-white/80 hover:bg-white z-20"
-          aria-label="Go home"
-          type="button"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-6 h-6 text-black"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-
-        {/* Toggle camera button */}
-        <button
-          onClick={toggleCamera}
-          className="absolute top-2 left-2 w-10 h-10 rounded-full bg-white/80 hover:bg-white flex items-center justify-center z-20"
-        >
-          {!isCameraOn ? (
-            // Camera Off Icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-black"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h16M4 18h16M4 6v12"
-              />
-              {/* Slash from top-right to bottom-left, extended */}
-              <line
-                x1="20"
-                y1="4"
-                x2="4"
-                y2="20"
-                stroke="red"
-                strokeWidth="2.5"
-              />
-            </svg>
-          ) : (
-            // Camera On Icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-black"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h16M4 18h16M4 6v12"
-              />
-            </svg>
-          )}
-        </button>
-
-        {/* Capture button */}
-        <button
-          onClick={captureImage}
-          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white hover:bg-gray-300 border-4 border-gray-800 z-20"
-        ></button>
-      </div>
-
-      <ConfirmDeleteModal
-        isOpen={showConfirm}
-        image={lastImage}
-        title="Delete this captured image?"
-        confirmText="Delete"
-        cancelText="Keep"
-        onCancel={() => setShowConfirm(false)}
-        onConfirm={() => {
-          deleteLastImage();
-          setShowConfirm(false);
+    <div
+      style={{
+        overflow: "hidden",
+        width: "100vw",
+        height: "100vh",
+        touchAction: "pan-y",
+        userSelect: "none",
+      }}
+    >
+      <div
+        ref={containerRef}
+        style={{
+          display: "flex",
+          width: "200vw", // twice viewport width for 2 pages at 100vw each
+          height: "100vh",
+          transition: isDragging.current ? "none" : "transform 0.3s ease-out",
         }}
-      />
+        onTouchStart={touchStart(currentIndex)}
+        onTouchMove={touchMove}
+        onTouchEnd={touchEnd}
+        onMouseDown={touchStart(currentIndex)}
+        onMouseMove={touchMove}
+        onMouseUp={touchEnd}
+        onMouseLeave={() => {
+          if (isDragging.current) touchEnd();
+        }}
+      >
+        {/* Page 1: CameraPage takes full viewport width */}
+        <div style={{ width: "100vw", height: "100vh" }}>
+          <CameraPage />
+        </div>
+
+        {/* Page 2: Fullscreen image takes full viewport width */}
+        <div
+          style={{
+            width: "100vw",
+            height: "100vh",
+            backgroundImage: "url('/test.jpg')",
+            backgroundSize: "contain",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      </div>
     </div>
   );
 }

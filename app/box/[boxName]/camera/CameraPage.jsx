@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 
 export default function CameraPage() {
   const videoRef = useRef(null);
@@ -42,7 +43,7 @@ export default function CameraPage() {
     isCameraOn ? stopCamera() : startCamera();
   };
 
-  const captureImage = () => {
+  const captureImage = async () => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
@@ -59,14 +60,41 @@ export default function CameraPage() {
     setShutterFlash(true);
     setTimeout(() => setShutterFlash(false), 150);
 
-    // Save to localStorage
+    // Prepare to save OCR text alongside image
+    let ocrText = "";
+
+    try {
+      // Remove prefix from dataUrl
+      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+      const response = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+
+      if (!response.ok) {
+        console.error("OCR API error", await response.text());
+      } else {
+        const data = await response.json();
+        ocrText = data.text || "No text detected";
+        console.log("OCR Text:", ocrText);
+      }
+    } catch (error) {
+      console.error("Error calling OCR API:", error);
+    }
+
+    // Save image + OCR text to localStorage
     const storedBoxes = localStorage.getItem("boxes");
     let boxes = storedBoxes ? JSON.parse(storedBoxes) : [];
     const index = boxes.findIndex(
       (box) => box.name === decodeURIComponent(boxName),
     );
     if (index !== -1) {
-      boxes[index].images = [...(boxes[index].images || []), dataUrl];
+      boxes[index].images = [
+        ...(boxes[index].images || []),
+        { image: dataUrl, ocrText: ocrText },
+      ];
       localStorage.setItem("boxes", JSON.stringify(boxes));
     }
   };
@@ -92,8 +120,8 @@ export default function CameraPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative">
-      <div className="fixed inset-0 z-0">
+    <div className="bg-black flex items-center justify-center relative w-full h-full">
+      <div className="relative w-full h-full z-0">
         <video
           ref={videoRef}
           className="w-full h-full object-cover rounded-lg pointer-events-none select-none"
@@ -185,6 +213,19 @@ export default function CameraPage() {
           className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white hover:bg-gray-300 border-4 border-gray-800 z-20"
         ></button>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={showConfirm}
+        image={lastImage}
+        title="Delete this captured image?"
+        confirmText="Delete"
+        cancelText="Keep"
+        onCancel={() => setShowConfirm(false)}
+        onConfirm={() => {
+          deleteLastImage();
+          setShowConfirm(false);
+        }}
+      />
     </div>
   );
 }
