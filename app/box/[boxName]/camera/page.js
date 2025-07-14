@@ -83,7 +83,7 @@ export default function SwipeView() {
 
   return (
     <div
-      className="overflow-hidden overflow-y-hidden scrollbar-none w-screen h-[calc(100vh-env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)]"
+      className="w-screen h-screen overflow-hidden pb-safe pt-safe"
       style={{ touchAction: "pan-x", userSelect: "none" }}
     >
       <div
