@@ -90,7 +90,15 @@ export default function CameraPage() {
           Seed Packet Camera - {decodeURIComponent(boxName)}
         </h1>
 
-        <video ref={videoRef} className="w-full rounded-md mb-4" />
+        <video
+          ref={videoRef}
+          className="w-full rounded-md mb-4 pointer-events-none select-none"
+          autoPlay
+          playsInline
+          muted
+          disablePictureInPicture
+          controls={false}
+        />
 
         <div className="relative mb-4">
           <canvas
@@ -123,6 +131,12 @@ export default function CameraPage() {
         </div>
 
         <div className="space-y-2">
+          <button
+            onClick={startCamera}
+            className="w-full bg-green-500 text-white p-2 rounded-md hover:bg-green-600"
+          >
+            Start Camera
+          </button>
           <button
             onClick={captureImage}
             className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"

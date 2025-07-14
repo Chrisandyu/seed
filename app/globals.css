@@ -4,3 +4,7 @@
     --background: #ffffff;
     --foreground: #171717;
 }
+
+video::-webkit-media-controls {
+    display: none !important;
+}
