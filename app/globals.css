@@ -20,12 +20,3 @@ video::-webkit-media-controls {
 .animate-fade-out {
     animation: fade-out 0.2s forwards;
 }
-
-@layer base {
-    html,
-    body,
-    #__next {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-}
