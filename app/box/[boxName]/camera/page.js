@@ -13,6 +13,7 @@ export default function SwipeView() {
   const isDragging = useRef(false);
 
   const clampIndex = (index) => Math.min(Math.max(index, 0), 1);
+
   useEffect(() => {
     const width = window.innerWidth;
     currentTranslate.current = -currentIndex * width;
@@ -44,14 +45,10 @@ export default function SwipeView() {
     const currentPosition = getPositionX(event);
     const diff = currentPosition - startX.current;
 
-    // Calculate proposed new translate
     let newTranslate = prevTranslate.current + diff;
-
-    // Clamp limits: left boundary is 0 (no swiping right beyond first page)
-    // right boundary is -width * (numberOfPages - 1)
-    const width = window.innerWidth; // full viewport width
-    const maxTranslate = 0; // leftmost position
-    const minTranslate = -width * 1; // rightmost position (index 1)
+    const width = window.innerWidth;
+    const maxTranslate = 0;
+    const minTranslate = -width * 1;
 
     if (newTranslate > maxTranslate) newTranslate = maxTranslate;
     if (newTranslate < minTranslate) newTranslate = minTranslate;
@@ -64,7 +61,7 @@ export default function SwipeView() {
     cancelAnimationFrame(animationRef.current);
 
     const movedBy = currentTranslate.current - prevTranslate.current;
-    const width = window.innerWidth; // full viewport width for swipe distance
+    const width = window.innerWidth;
 
     if (movedBy < -100 && currentIndex < 1) {
       setCurrentIndex((i) => clampIndex(i + 1));
@@ -83,7 +80,7 @@ export default function SwipeView() {
 
   return (
     <div
-      className="w-screen h-screen overflow-hidden flex items-center relative"
+      className="w-screen h-[100dvh] overflow-hidden flex items-center relative"
       style={{ touchAction: "pan-x", userSelect: "none" }}
     >
       <div
