@@ -120,7 +120,7 @@ export default function CameraPage() {
   }, []);
 
   return (
-    <div className="bg-black flex items-center justify-center relative w-full h-full">
+    <div className="h-screen bg-black flex items-center justify-center relative">
       <div className="relative w-full h-full z-0">
         <video
           ref={videoRef}

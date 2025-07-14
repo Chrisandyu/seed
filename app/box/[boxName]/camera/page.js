@@ -83,7 +83,7 @@ export default function SwipeView() {
 
   return (
     <div
-      className="w-screen h-screen overflow-hidden"
+      className="w-screen h-screen overflow-hidden flex items-center relative"
       style={{ touchAction: "pan-x", userSelect: "none" }}
     >
       <div
