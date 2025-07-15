@@ -2,7 +2,7 @@
 import { useState } from "react";
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 
-export default function ImageCard({ image, onDelete }) {
+export default function ImageCard({ image, onDelete, onClick }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   return (
@@ -10,11 +10,15 @@ export default function ImageCard({ image, onDelete }) {
       <img
         src={image}
         alt="Seed packet"
-        className="w-full h-24 object-cover rounded-md"
+        className="w-full h-24 object-cover rounded-md cursor-pointer"
+        onClick={onClick}
       />
       <button
-        onClick={() => setShowConfirm(true)}
-        className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-500/20"
+        onClick={(e) => {
+          e.stopPropagation(); // prevent triggering the image click
+          setShowConfirm(true);
+        }}
+        className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center"
         aria-label="Delete image"
         type="button"
       >

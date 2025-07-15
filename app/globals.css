@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-:root {
-    --background: #ffffff;
-    --foreground: #171717;
+@plugin "daisyui" {
+    themes: dracula --default;
 }
 
 video::-webkit-media-controls {

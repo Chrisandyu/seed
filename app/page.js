@@ -9,7 +9,6 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBoxName, setNewBoxName] = useState("");
 
-  // Track box selected for deletion
   const [boxToDelete, setBoxToDelete] = useState(null);
   const router = useRouter();
 
@@ -35,12 +34,10 @@ export default function Home() {
     router.push(`/box/${encodeURIComponent(boxName)}`);
   };
 
-  // Show confirm modal for box deletion
   const confirmDeleteBox = (boxName) => {
     setBoxToDelete(boxName);
   };
 
-  // Actually delete box after confirmation
   const deleteBox = (boxName) => {
     const updatedBoxes = boxes.filter((box) => box.name !== boxName);
     setBoxes(updatedBoxes);
@@ -49,21 +46,21 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-base-200 flex items-center justify-center ">
+      <div className="bg-base-100 card-border border-base-300 card-sm p-6 rounded-lg shadow-lg w-full max-w-md text-base-content">
         <h1 className="text-2xl font-bold mb-4 text-center">
           Seed Packet Recorder
         </h1>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 mb-4"
+          className="w-full p-2 rounded-md btn btn-primary mb-4"
         >
           Create New Box
         </button>
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Saved Boxes</h2>
           {boxes.length === 0 ? (
-            <p className="text-gray-500">No boxes created yet</p>
+            <p>No boxes created yet</p>
           ) : (
             <ul className="space-y-2">
               {boxes.map((box, index) => (
@@ -79,22 +76,21 @@ export default function Home() {
           )}
         </div>
 
-        {/* Create Box Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+          <div className="fixed inset-0 bg-base-200 bg-opacity-50 flex items-center justify-center z-10">
+            <div className="p-6 rounded-lg shadow-lg w-full max-w-sm bg-base-100">
               <h2 className="text-xl font-bold mb-4">Create New Box</h2>
               <input
                 type="text"
                 value={newBoxName}
                 onChange={(e) => setNewBoxName(e.target.value)}
-                className="w-full p-2 border rounded-md mb-4"
+                className="w-full p-2 input input-border max-w-none resize-none rounded-md mb-4"
                 placeholder="Enter box name"
               />
               <div className="flex space-x-2">
                 <button
                   onClick={saveBox}
-                  className="flex-1 bg-green-500 text-white p-2 rounded-md hover:bg-green-600"
+                  className="flex-1 btn btn-primary p-2"
                 >
                   Save
                 </button>
@@ -103,7 +99,7 @@ export default function Home() {
                     setNewBoxName("");
                     setIsModalOpen(false);
                   }}
-                  className="flex-1 bg-red-500 text-white p-2 rounded-md hover:bg-red-600"
+                  className="flex-1 p-2 btn btn-error"
                 >
                   Cancel
                 </button>

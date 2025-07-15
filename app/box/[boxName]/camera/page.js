@@ -1,9 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import CameraPage from "./CameraPage";
+import ImageView from "../components/ImageView";
 
 export default function SwipeView() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [latestImage, setLatestImage] = useState(null);
   const containerRef = useRef(null);
 
   const startX = useRef(0);
@@ -101,16 +103,21 @@ export default function SwipeView() {
           if (isDragging.current) touchEnd();
         }}
       >
-        {/* Page 1 */}
+        {/* left side */}
         <div className="w-screen h-full">
-          <CameraPage />
+          <CameraPage setLatestImage={setLatestImage} />
         </div>
 
-        {/* Page 2 */}
-        <div
-          className="w-screen h-full bg-no-repeat bg-contain bg-center"
-          style={{ backgroundImage: "url('/test.jpg')" }}
-        />
+        {/* right side */}
+        <div className="w-screen h-full overflow-y-auto bg-base-300">
+          {latestImage ? (
+            <ImageView imageData={latestImage} index={0} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-xl">
+              No image captured yet
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 
-export default function CameraPage() {
+export default function CameraPage({ setLatestImage }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null); // still needed for capturing image, just not rendered
   const streamRef = useRef(null);
@@ -56,46 +56,61 @@ export default function CameraPage() {
     const dataUrl = canvas.toDataURL("image/jpeg");
     setLastImage(dataUrl);
 
-    // Flash effect
     setShutterFlash(true);
     setTimeout(() => setShutterFlash(false), 150);
 
-    // Prepare to save OCR text alongside image
     let ocrText = "";
 
-    try {
-      // Remove prefix from dataUrl
-      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+    // try {
+    //   // Remove prefix from dataUrl
+    //   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
-      });
+    //   const response = await fetch("/api/ocr", {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({ imageBase64: base64 }),
+    //   });
 
-      if (!response.ok) {
-        console.error("OCR API error", await response.text());
-      } else {
-        const data = await response.json();
-        ocrText = data.text || "No text detected";
-        console.log("OCR Text:", ocrText);
-      }
-    } catch (error) {
-      console.error("Error calling OCR API:", error);
-    }
+    //   if (!response.ok) {
+    //     console.error("OCR API error", await response.text());
+    //   } else {
+    //     const data = await response.json();
+    //     ocrText = data.text || "No text detected";
+    //     console.log("OCR Text:", ocrText);
+    //   }
+    // } catch (error) {
+    //   console.error("Error calling OCR API:", error);
+    // }
 
     // Save image + OCR text to localStorage
+    //
+
+    let aiJSON = {};
+    ocrText = "TCP14-TD SPY3TPR (K/M) T2 10B, 1, 10 packets";
+
+    const response = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ocrText }),
+    });
+
+    if (response.ok) {
+      aiJSON = await response.json();
+    }
+
     const storedBoxes = localStorage.getItem("boxes");
     let boxes = storedBoxes ? JSON.parse(storedBoxes) : [];
     const index = boxes.findIndex(
       (box) => box.name === decodeURIComponent(boxName),
     );
     if (index !== -1) {
-      boxes[index].images = [
-        ...(boxes[index].images || []),
-        { image: dataUrl, ocrText: ocrText },
-      ];
+      const savedImage = { image: dataUrl, ocrText: ocrText, json: aiJSON };
+      boxes[index].images = [...(boxes[index].images || []), savedImage];
       localStorage.setItem("boxes", JSON.stringify(boxes));
+
+      if (typeof setLatestImage === "function") {
+        setLatestImage(savedImage);
+      }
     }
   };
 
@@ -120,7 +135,7 @@ export default function CameraPage() {
   }, []);
 
   return (
-    <div className="h-full bg-black flex items-center justify-center relative">
+    <div className="h-full bg-base-200 flex items-center justify-center relative">
       <div className="relative w-full h-full z-0">
         <video
           ref={videoRef}
@@ -129,16 +144,13 @@ export default function CameraPage() {
           playsInline
           muted
         />
-
-        {/* Flash effect */}
         {shutterFlash && (
           <div className="absolute inset-0 bg-white opacity-80 animate-fade-out pointer-events-none z-10" />
         )}
 
-        {/* Delete last image button */}
         <button
           onClick={() => router.push(`/box/${encodeURIComponent(boxName)}`)}
-          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center bg-white/80 hover:bg-white z-20"
+          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center  bg-white/80 hover:bg-white z-20"
           aria-label="Go home"
           type="button"
         >
@@ -158,13 +170,11 @@ export default function CameraPage() {
           </svg>
         </button>
 
-        {/* Toggle camera button */}
         <button
           onClick={toggleCamera}
           className="absolute top-2 left-2 w-10 h-10 rounded-full bg-white/80 hover:bg-white flex items-center justify-center z-20"
         >
           {!isCameraOn ? (
-            // Camera Off Icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6 text-black"
@@ -189,7 +199,6 @@ export default function CameraPage() {
               />
             </svg>
           ) : (
-            // Camera On Icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6 text-black"
@@ -207,7 +216,6 @@ export default function CameraPage() {
           )}
         </button>
 
-        {/* Capture button */}
         <button
           onClick={captureImage}
           className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white hover:bg-gray-300 border-4 border-gray-800 z-20"
@@ -217,7 +225,7 @@ export default function CameraPage() {
       <ConfirmDeleteModal
         isOpen={showConfirm}
         image={lastImage}
-        title="Delete this captured image?"
+        title="Delete this image?"
         confirmText="Delete"
         cancelText="Keep"
         onCancel={() => setShowConfirm(false)}
