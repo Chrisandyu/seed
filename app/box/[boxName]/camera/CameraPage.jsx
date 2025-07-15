@@ -61,41 +61,36 @@ export default function CameraPage({ setLatestImage }) {
 
     let ocrText = "";
 
-    // try {
-    //   // Remove prefix from dataUrl
-    //   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+    try {
+      // Remove prefix from dataUrl
+      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-    //   const response = await fetch("/api/ocr", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify({ imageBase64: base64 }),
-    //   });
+      const response = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
 
-    //   if (!response.ok) {
-    //     console.error("OCR API error", await response.text());
-    //   } else {
-    //     const data = await response.json();
-    //     ocrText = data.text || "No text detected";
-    //     console.log("OCR Text:", ocrText);
-    //   }
-    // } catch (error) {
-    //   console.error("Error calling OCR API:", error);
-    // }
-
-    // Save image + OCR text to localStorage
-    //
+      if (!response.ok) {
+        console.error("OCR API error", await response.text());
+      } else {
+        const data = await response.json();
+        ocrText = data.text || "No text detected";
+        console.log("OCR Text:", ocrText);
+      }
+    } catch (error) {
+      console.error("Error calling OCR API:", error);
+    }
 
     let aiJSON = {};
-    ocrText = "TCP14-TD SPY3TPR (K/M) T2 10B, 1, 10 packets";
-
-    const response = await fetch("/api/ai", {
+    const aiResponse = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ocrText }),
     });
 
-    if (response.ok) {
-      aiJSON = await response.json();
+    if (aiResponse.ok) {
+      aiJSON = await aiResponse.json();
     }
 
     const storedBoxes = localStorage.getItem("boxes");
