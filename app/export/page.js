@@ -87,7 +87,7 @@ export default function ExportPage() {
 
   return (
     <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+      <div className="min-h-screen bg-base-200 flex items-center justify-center select-none">
         <div className="bg-base-100 card-border border-base-300 card-sm p-6 rounded-lg shadow-lg w-full max-w-md text-base-content">
           <button
             onClick={() => router.push("/")}
