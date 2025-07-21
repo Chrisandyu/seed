@@ -31,20 +31,17 @@ export default function ExportPage() {
     );
   };
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (!active || !over || active.id === over.id) return;
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
 
-    const oldIndex = boxOrder.findIndex((name) => name === active.id);
-    const newIndex = boxOrder.findIndex((name) => name === over.id);
+    const oldIndex = boxOrder.indexOf(active.id);
+    const newIndex = boxOrder.indexOf(over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      setBoxOrder((prev) => {
-        const newOrder = [...prev];
-        const [movedBox] = newOrder.splice(oldIndex, 1);
-        newOrder.splice(newIndex, 0, movedBox);
-        return newOrder;
-      });
+      const newOrder = [...boxOrder];
+      newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, active.id);
+      setBoxOrder(newOrder);
     }
   };
 
@@ -57,25 +54,29 @@ export default function ExportPage() {
       "Description",
     ];
     const rows = [];
-    selectedBoxes.forEach((boxName, boxIndex) => {
-      const box = boxes.find((b) => b.name === boxName);
-      if (box && box.images) {
-        box.images.forEach((imageData, imageIndex) => {
-          const data = imageData.json || {};
-          rows.push(
-            [
-              imageIndex === 0 ? boxName : "",
-              data["Construct Name"] || "null",
-              data.Background || "null",
-              data.Generations || "null",
-              data.Description || "null",
-            ]
-              .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-              .join(","),
-          );
-        });
-      }
-    });
+    // Use boxOrder filtered by selectedBoxes to preserve order & selection
+    boxOrder
+      .filter((boxName) => selectedBoxes.includes(boxName))
+      .forEach((boxName) => {
+        const box = boxes.find((b) => b.name === boxName);
+        if (box && box.images) {
+          box.images.forEach((imageData, imageIndex) => {
+            const data = imageData.json || {};
+            rows.push(
+              [
+                imageIndex === 0 ? boxName : "",
+                data["Construct Name"] || "null",
+                data.Background || "null",
+                data.Generations || "null",
+                data.Description || "null",
+              ]
+                .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+                .join(","),
+            );
+          });
+        }
+      });
+
     const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -88,6 +89,7 @@ export default function ExportPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Boxes ordered by boxOrder state
   return (
     <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-base-200 flex items-center justify-center select-none">
@@ -161,17 +163,15 @@ export default function ExportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedBoxes.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="text-center text-gray-500">
-                          No boxes selected
-                        </td>
-                      </tr>
-                    ) : (
-                      selectedBoxes.flatMap((boxName, boxIndex) => {
+                    {/*
+                      Preview only selected boxes in the current order (boxOrder)
+                    */}
+                    {boxOrder
+                      .filter((boxName) => selectedBoxes.includes(boxName))
+                      .flatMap((boxName) => {
                         const box = boxes.find((b) => b.name === boxName);
                         if (!box || !box.images || box.images.length === 0) {
-                          return [
+                          return (
                             <tr key={boxName}>
                               <td>{boxName}</td>
                               <td
@@ -180,8 +180,8 @@ export default function ExportPage() {
                               >
                                 No images in this box
                               </td>
-                            </tr>,
-                          ];
+                            </tr>
+                          );
                         }
                         return box.images.map((imageData, imageIndex) => {
                           const data = imageData.json || {};
@@ -195,8 +195,7 @@ export default function ExportPage() {
                             </tr>
                           );
                         });
-                      })
-                    )}
+                      })}
                   </tbody>
                 </table>
               </div>
