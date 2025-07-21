@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Seed Scanner",
+  title: "Seed Cataloger",
   description: "powered by ai",
 };
 

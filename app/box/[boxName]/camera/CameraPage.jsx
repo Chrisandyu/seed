@@ -61,36 +61,41 @@ export default function CameraPage({ setLatestImage }) {
 
     let ocrText = "";
 
-    try {
-      // Remove prefix from dataUrl
-      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+    // try {
+    //   // Remove prefix from dataUrl
+    //   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
-      });
+    //   const response = await fetch("/api/ocr", {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({ imageBase64: base64 }),
+    //   });
 
-      if (!response.ok) {
-        console.error("OCR API error", await response.text());
-      } else {
-        const data = await response.json();
-        ocrText = data.text || "No text detected";
-        console.log("OCR Text:", ocrText);
-      }
-    } catch (error) {
-      console.error("Error calling OCR API:", error);
-    }
+    //   if (!response.ok) {
+    //     console.error("OCR API error", await response.text());
+    //   } else {
+    //     const data = await response.json();
+    //     ocrText = data.text || "No text detected";
+    //     console.log("OCR Text:", ocrText);
+    //   }
+    // } catch (error) {
+    //   console.error("Error calling OCR API:", error);
+    // }
+
+    // Save image + OCR text to localStorage
+    //
 
     let aiJSON = {};
-    const aiResponse = await fetch("/api/ai", {
+    ocrText = "TCP14-TD SPY3TPR (K/M) T2 10B, 1, 10 packets";
+
+    const response = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ocrText }),
     });
 
-    if (aiResponse.ok) {
-      aiJSON = await aiResponse.json();
+    if (response.ok) {
+      aiJSON = await response.json();
     }
 
     const storedBoxes = localStorage.getItem("boxes");
@@ -130,7 +135,7 @@ export default function CameraPage({ setLatestImage }) {
   }, []);
 
   return (
-    <div className="h-full bg-base-200 flex items-center justify-center relative">
+    <div className="h-full bg-black flex items-center justify-center relative">
       <div className="relative w-full h-full z-0">
         <video
           ref={videoRef}
@@ -145,7 +150,7 @@ export default function CameraPage({ setLatestImage }) {
 
         <button
           onClick={() => router.push(`/box/${encodeURIComponent(boxName)}`)}
-          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center  bg-white/80 hover:bg-white z-20"
+          className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center bg-white/80 hover:bg-white z-20"
           aria-label="Go home"
           type="button"
         >

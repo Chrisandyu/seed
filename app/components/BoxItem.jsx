@@ -4,7 +4,7 @@ export default function BoxItem({ boxName, onClick, onDelete }) {
   return (
     <div
       className="flex items-center justify-between p-2 rounded cursor-pointer
-                btn border border-secondary"
+                btn border border-accent"
       onClick={onClick}
     >
       <span>{boxName}</span>

@@ -87,6 +87,14 @@ export default function BoxPage() {
         >
           Go to Camera
         </button>
+        <button
+          onClick={() =>
+            router.push(`/box/${encodeURIComponent(boxName)}/summary`)
+          }
+          className="w-full p-2 my-4 rounded-md btn btn-primary"
+        >
+          View Summary
+        </button>
         <ImageList
           boxName={decodeURIComponent(boxName)}
           images={images}

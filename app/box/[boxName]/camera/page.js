@@ -114,7 +114,7 @@ export default function SwipeView() {
             <ImageView imageData={latestImage} index={0} />
           ) : (
             <div className="flex items-center justify-center h-full text-xl">
-              No image captured yet
+              No image taken yet
             </div>
           )}
         </div>
