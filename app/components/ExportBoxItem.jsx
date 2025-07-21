@@ -37,11 +37,11 @@ export default function ExportBoxItem({
           className="checkbox checkbox-primary"
         />
         <span>{boxName}</span>
-      </div>
+      </div>{" "}
       <div
         {...attributes}
         {...listeners}
-        className="cursor-move p-2 rounded hover:bg-base-300"
+        className="cursor-move p-2 rounded touch-none hover:bg-base-300"
         aria-label="Drag handle"
       >
         <svg
