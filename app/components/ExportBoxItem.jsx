@@ -14,10 +14,7 @@ export default function ExportBoxItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id: boxName,
-    disabled: !isSelected,
-  });
+  } = useSortable({ id: boxName });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -29,14 +26,7 @@ export default function ExportBoxItem({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`flex items-center justify-between bg-base-200 p-3 rounded-md cursor-move`}
-      onClick={(e) => {
-        if (e.target.type !== "checkbox") {
-          onToggleSelection();
-        }
-      }}
+      className={`flex items-center justify-between bg-base-200 p-3 rounded-md`}
     >
       <div className="flex items-center space-x-2">
         <input
@@ -46,7 +36,28 @@ export default function ExportBoxItem({
           onClick={(e) => e.stopPropagation()}
           className="checkbox checkbox-primary"
         />
-        <span className="flex-grow select-none">{boxName}</span>
+        <span>{boxName}</span>
+      </div>
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-move p-2 rounded hover:bg-base-300"
+        aria-label="Drag handle"
+      >
+        <svg
+          className="w-4 h-4 text-gray-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M4 10h16M4 14h16"
+          />
+        </svg>
       </div>
     </div>
   );

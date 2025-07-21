@@ -12,11 +12,14 @@ export default function ExportPage() {
   const router = useRouter();
   const [boxes, setBoxes] = useState([]);
   const [selectedBoxes, setSelectedBoxes] = useState([]);
+  const [boxOrder, setBoxOrder] = useState([]);
 
   useEffect(() => {
     const storedBoxes = localStorage.getItem("boxes");
     if (storedBoxes) {
-      setBoxes(JSON.parse(storedBoxes));
+      const parsed = JSON.parse(storedBoxes);
+      setBoxes(parsed);
+      setBoxOrder(parsed.map((b) => b.name));
     }
   }, []);
 
@@ -32,11 +35,11 @@ export default function ExportPage() {
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const oldIndex = selectedBoxes.findIndex((name) => name === active.id);
-    const newIndex = selectedBoxes.findIndex((name) => name === over.id);
+    const oldIndex = boxOrder.findIndex((name) => name === active.id);
+    const newIndex = boxOrder.findIndex((name) => name === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      setSelectedBoxes((prev) => {
+      setBoxOrder((prev) => {
         const newOrder = [...prev];
         const [movedBox] = newOrder.splice(oldIndex, 1);
         newOrder.splice(newIndex, 0, movedBox);
@@ -117,18 +120,22 @@ export default function ExportPage() {
               <p>No boxes created yet</p>
             ) : (
               <SortableContext
-                items={selectedBoxes}
+                items={boxOrder}
                 strategy={verticalListSortingStrategy}
               >
                 <ul className="space-y-2">
-                  {boxes.map((box) => (
-                    <ExportBoxItem
-                      key={box.name}
-                      boxName={box.name}
-                      isSelected={selectedBoxes.includes(box.name)}
-                      onToggleSelection={() => toggleBoxSelection(box.name)}
-                    />
-                  ))}
+                  {boxOrder.map((boxName) => {
+                    const box = boxes.find((b) => b.name === boxName);
+                    if (!box) return null;
+                    return (
+                      <ExportBoxItem
+                        key={box.name}
+                        boxName={box.name}
+                        isSelected={selectedBoxes.includes(box.name)}
+                        onToggleSelection={() => toggleBoxSelection(box.name)}
+                      />
+                    );
+                  })}
                 </ul>
               </SortableContext>
             )}
